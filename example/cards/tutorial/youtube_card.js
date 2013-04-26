@@ -6,6 +6,7 @@ var card = Conductor.card({
 
   activate: function (data) {
     Conductor.Oasis.RSVP.EventTarget.mixin(this);
+    this.loadYouTubeAPI();
     this.videoId = data.videoId;
   },
 
@@ -13,13 +14,27 @@ var card = Conductor.card({
     $('body').html('<img id="thumbnail" /><div id="player"></div>');
     $('head').append('<script src="https://www.youtube.com/iframe_api"></script>');
 
+    $('#thumbnail').attr('src', 'http://img.youtube.com/vi/' + this.videoId + '/0.jpg');
     this.on('resize', this.resizeThumbnail);
+    this.loadVideo(this.videoId);
   },
 
   render: function (intent, dimensions) {
     this.setDimensions(dimensions);
 
-    $('#thumbnail').attr('src', 'http://img.youtube.com/vi/' + this.videoId + '/0.jpg');
+    switch (intent) {
+      case "thumbnail":
+        $('#player').hide();
+        $('#thumbnail').show();
+        break;
+      case "small":
+      case "large":
+        $('#thumbnail').hide();
+        $('#player').show();
+        break;
+      default:
+        throw new Error("Unuspported intent '" + intent + "'");
+    }
   },
 
   resizeThumbnail: function () {
@@ -43,5 +58,61 @@ var card = Conductor.card({
     }
 
     this.trigger('resize');
+  },
+
+  loadVideo: function (videoId) {
+    var card = this;
+
+    this.loadYouTubeAPI().then(function (YT) {
+      card.loadPlayer(YT);
+    });
+  },
+
+  loadYouTubeAPI: function () {
+    if (!this._youtubePromise) {
+      var promise = this._youtubePromise = new Conductor.Oasis.RSVP.Promise();
+      if (window.YT) {
+        promise.resolve(window.YT);
+      } else {
+        window.onYouTubeIframeAPIReady = function () {
+          promise.resolve(window.YT);
+        };
+      }
+    }
+
+    return this._youtubePromise;
+  },
+
+  loadPlayer: function (YT) {
+    if (!this._playerPromise) {
+      var promise = this._playerPromise = new Conductor.Oasis.RSVP.Promise(),
+          card = this;
+
+      card.promise.then(function () {
+        var dimensions = card.getDimensions();
+
+        var player = card.player = new YT.Player('player', {
+          height: dimensions.height,
+          width: dimensions.width,
+          videoId: card.videoId,
+          playerVars: {
+            rel: 0
+          },
+          events: {
+            onReady: function() {
+              promise.resolve(player);
+            }
+          }
+        });
+
+        card.on('resize', function () {
+          var dimensions = this.getDimensions();
+          this.player.setSize(dimensions.width, dimensions.height);
+        });
+      });
+    }
+
+    return this._playerPromise;
   }
+
 });
