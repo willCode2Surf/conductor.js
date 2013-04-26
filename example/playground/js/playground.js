@@ -37,9 +37,20 @@ window.Playground = {
         }
       }
     });
+
+    this.conductor.services.video = Conductor.Oasis.Service.extend({
+      initialize: function (port) {
+        this.sandbox.videoPort = window.videoPort = port;
+      },
+      events: {
+        videoWatched: function () {
+          console.log("User watched a video");
+        }
+      }
+    });
     
     this.conductor.loadData('../cards/tutorial/youtube_card.js', '1', { videoId: '4d8ZDSyFS2g'});
-    this.addCard('../cards/tutorial/youtube_card.js', 1, []);
+    this.addCard('../cards/tutorial/youtube_card.js', 1, ['video']);
   }
 };
 

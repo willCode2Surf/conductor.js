@@ -2,6 +2,18 @@ Conductor.require('/example/libs/jquery-1.9.1.js');
 Conductor.requireCSS('/example/cards/tutorial/youtube_card.css');
 
 var card = Conductor.card({
+  consumers: {
+    video: Conductor.Oasis.Consumer.extend({
+      events: {
+        play: function () {
+          card.loadPlayer().then(function (player) {
+            player.playVideo();
+          });
+        }
+      }
+    })
+  },
+
   videoId: null,
 
   activate: function (data) {
@@ -101,6 +113,14 @@ var card = Conductor.card({
           events: {
             onReady: function() {
               promise.resolve(player);
+            },
+            onStateChange: function (event) {
+              var playerState = event.data;
+              if (playerState === YT.PlayerState.ENDED &&
+                  card.consumers.video) {
+
+                card.consumers.video.send('videoWatched');
+              }
             }
           }
         });
