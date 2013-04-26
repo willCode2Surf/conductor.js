@@ -30,7 +30,7 @@
       var card = this.conductor.load(
         url, id, { capabilities: capabilities });
 
-      card.renderHeight = 600;
+      card.renderHeight = 300;
       card.renderWidth = 600;
       card.renderIntent = 'thumbnail';
 
@@ -60,12 +60,12 @@
 
         card.render('thumbnail', {
           width: 600,
-          height: 600
+          height: 300
         });
 
         $card.find('iframe').css({
           width: 600,
-          height: 600
+          height: 300
         });
       });
 
