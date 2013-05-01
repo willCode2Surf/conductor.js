@@ -1,8 +1,15 @@
+/*global Handlebars */
+
 Conductor.require('/example/libs/jquery-1.9.1.js');
+Conductor.require('/example/libs/handlebars-1.0.0-rc.3.js');
 Conductor.requireCSS('/example/cards/tutorial/ad_card.css');
 
 
+var videoSelectTemplate = '<div id="selectWrapper">Load Video: <select id="videoSelect">{{#each videoIds}}<option value="{{this}}">{{this}}</option>{{/each}}</select></div>';
+
 var card = Conductor.card({
+  videoIds: ['4d8ZDSyFS2g', 'EquPUW83D-Q'],
+
   consumers: {
     survey: Conductor.Oasis.Consumer,
     video: Conductor.Oasis.Consumer.extend({
@@ -51,13 +58,14 @@ var card = Conductor.card({
     var videoCardOptions = this.childCards[0],
         surveyCardOptions = this.childCards[1];
 
-    videoCardOptions.data = { videoId: data.videoId };
+    this.videoId = this.videoIds[0];
+    videoCardOptions.data = { videoId: this.videoId };
   },
 
-  activate: function (data) {
+  activate: function () {
     Conductor.Oasis.RSVP.EventTarget.mixin(this);
 
-    this.videoId = data.videoId;
+    videoSelectTemplate = Handlebars.compile(videoSelectTemplate);
     this.videoCard = this.childCards[0].card;
     this.surveyCard = this.childCards[1].card;
   },
@@ -65,7 +73,10 @@ var card = Conductor.card({
   render: function (intent, _dimensions) {
     this.setDimensions(_dimensions);
 
-    var dimensions = this.getDimensions();
+    var dimensions = {
+      width: this.getDimensions().width,
+      height: this.cardWrapperDiv.height()
+    };
 
     switch (intent) {
       case "thumbnail":
@@ -99,8 +110,24 @@ var card = Conductor.card({
   },
 
   initializeDOM: function () {
-    this.videoCard.appendTo(document.body);
-    this.surveyCard.appendTo(document.body);
+    var card = this;
+
+    $(videoSelectTemplate(this)).appendTo('body');
+    $('#videoSelect').change(function () {
+      card.changeVideo($(this).val());
+    });
+
+    this.selectWrapperDiv = $('#selectWrapper');
+    this.cardWrapperDiv = $('<div id="cardWrapper"></div>');
+    this.cardWrapperDiv.appendTo('body');
+    this.videoCard.appendTo(this.cardWrapperDiv[0]);
+    this.surveyCard.appendTo(this.cardWrapperDiv[0]);
+  },
+
+  changeVideo: function (videoId) {
+    this.videoId = videoId;
+    this.conductor.loadData('../cards/tutorial/youtube_card.js', '1', { videoId: this.videoId });
+    this.render('video');
   },
 
   getDimensions: function () {
@@ -117,5 +144,7 @@ var card = Conductor.card({
         width: window.innerWidth
       };
     }
+
+    this.cardWrapperDiv.height(this._dimensions.height - this.selectWrapperDiv.height());
   }
 });
